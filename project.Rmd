@@ -1,0 +1,85 @@
+---
+title: "Predictive Machine Learning"
+author: "Eric M. Jalbert"
+date: "June 21, 2015"
+output: html_document
+---
+
+## Introduction
+This is a write-up for the predictive machine learning project. The first step is to load up the training and testing data sets and libraries.
+
+```{r}
+training <- read.csv("pml-training.csv", na.strings = c("NA", ""))
+testing <- read.csv("pml-testing.csv", na.strings = c("NA", ""))
+```
+
+```{r}
+library(caret)
+library(rpart)
+library(rpart.plot)
+library(randomForest)
+```
+
+Also, for reproducibility;
+```{r}
+set.seed(6615)
+```
+
+## Data Pre-processing
+There are a number of variables that are not needed in the predictive model. These are the one that do not represent any movement. These can be removed.
+```{r}
+training <- training[, -(1:7)]
+```
+
+We can also remove the variables that are mostly `NA` or the ones that do not have large values, implying that they do not effect the model much.
+```{r}
+training <- training[ , colSums(is.na(training)) == 0]
+```
+
+## Cross Validation
+Now, because we are cross validating our model, we split up the training data set into a smaller training set (80%) and a smaller testing set (20%). This way we can extra accuracy for our model.
+```{r}
+i <- createDataPartition(y = training$classe, p = 0.2, list = FALSE)
+small_training<- training[i, ]  
+small_testing <- training[-i, ]
+```
+
+
+## Model Building
+There are two accepted methods to building a model. Decision trees and Random walk.
+
+### Decision Trees
+We can quickly build the tree using the following commands. We can also get a visual look at it.
+```{r}
+deciTree <- rpart(classe ~ ., data=small_training, method="class")
+predictionTree <- predict(deciTree, small_testing, type = "class")
+rpart.plot(deciTree, main="Classification Tree", extra=102, under=TRUE, faclen=0)
+```
+
+Now we can test out this model on our smaller testing set to see how it rates.
+```{r}
+confusionMatrix(predictionTree, small_testing$classe)
+```
+
+### Random Forest
+Here we build a model using the Random Forest method.
+```{r}
+randFore <- randomForest(classe ~. , data=small_training)
+predictionsFore <- predict(randFore, small_testing, type = "class")
+confusionMatrix(predictionsFore, small_testing$classe)
+```
+which is much better.
+
+## Expected Error
+The Random Forest algorithm created a much better model then the Decision Tree did. The Random Forest model has an accuracy of 0.974 and a 95% Confidence interval of (0.9714, 0.9764). The Decision tree only had an accuracy of 0.7135 and a 95% Confidence Interval of (0.7064, 0.7206). This makes the choice of using the Random Forest model trivial.
+
+From our choice of model, the expected error will be 0.026, which means that there should not be very many incorrect predictions.
+
+## Choices
+These are the predictions for the actual test data set, using the Random Forest model.
+```{r}
+submitPredict <- predict(randFore, testing, type = "class")
+submitPredict
+```
+
+
