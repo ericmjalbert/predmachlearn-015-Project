@@ -1,0 +1,6 @@
+---
+title: "Predictive Machine Learning"
+author: "Eric M. Jalbert"
+date: "June 21, 2015"
+output: html_document
+---
